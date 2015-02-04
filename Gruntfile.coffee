@@ -1,3 +1,5 @@
+#uglifyjs dest/sequenced.js --compress --mangle -o dest/sequenced.min.js
+
 module.exports = (grunt) ->
 
 	# Project configuration.

@@ -16,7 +16,7 @@ class Sequenced
 	COLOR_LIFELINE = '#80aada' #87CEFA
 	COLOR_MESSAGE = '#f7ab42' #F4A460
 	DefaultCanvasWidth = 800
-	DefaultObjectWidth = 100
+	DefaultObjectWidth = 120
 	DefaultObjectHeight = 40
 	DefaultFontFamily = 'Arial'
 	DefaultFontColor = '#000'

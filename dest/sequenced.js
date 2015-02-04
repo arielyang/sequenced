@@ -32,7 +32,7 @@ Sequenced = (function() {
 
   DefaultCanvasWidth = 800;
 
-  DefaultObjectWidth = 100;
+  DefaultObjectWidth = 120;
 
   DefaultObjectHeight = 40;
 
