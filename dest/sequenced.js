@@ -2,7 +2,7 @@
 var CanvasHelper, DefinationParser, Sequenced;
 
 Sequenced = (function() {
-  var COLOR_LIFELINE, COLOR_MESSAGE, COLOR_OBJECT_BORDER, DefaultCanvasWidth, DefaultFontColor, DefaultFontFamily, DefaultFontSize, DefaultObjectHeight, DefaultObjectWidth, DefualtLineHeight, Margin, MaxObjectWidth, RowHeight, canvasElement, columHeight, ctx, drawMessage, drawMessages, drawObject, drawObjects, fontColor, fontFamily, fontSize, initCanvas, initSequenceData, initVariables, lineHeight, objectHeight, objectWidth, sequenceData;
+  var COLOR_LIFELINE, COLOR_MESSAGE, COLOR_OBJECT_BORDER, DefaultCanvasWidth, DefaultFontColor, DefaultFontFamily, DefaultFontSize, DefaultObjectHeight, DefaultObjectWidth, Margin, MaxObjectWidth, RowHeight, canvasElement, columHeight, ctx, drawActivations, drawMessage, drawMessages, drawObject, drawObjects, fontColor, fontFamily, fontSize, initCanvas, initVariables, objectHeight, objectWidth, renderCanvasElement, sequenceData;
 
   function Sequenced() {}
 
@@ -11,8 +11,6 @@ Sequenced = (function() {
   objectWidth = null;
 
   objectHeight = null;
-
-  lineHeight = null;
 
   fontFamily = null;
 
@@ -34,37 +32,42 @@ Sequenced = (function() {
 
   DefaultCanvasWidth = 800;
 
-  DefaultObjectWidth = 120;
+  DefaultObjectWidth = 100;
 
-  DefaultObjectHeight = 50;
+  DefaultObjectHeight = 40;
 
-  DefualtLineHeight = 18;
-
-  DefaultFontFamily = 'Verdana';
+  DefaultFontFamily = 'Arial';
 
   DefaultFontColor = '#000';
 
-  DefaultFontSize = 14;
+  DefaultFontSize = 12;
 
-  MaxObjectWidth = 150;
+  MaxObjectWidth = 100;
 
-  RowHeight = 50;
+  RowHeight = 48;
 
   Margin = 10;
 
-  Sequenced.COLOR_OBJECT = ['#fdd9b4', '#bae0ec', '#c2e2c7', '#c9d1f7', '#e5cff4', '#f8cdd4'];
+  Sequenced.COLOR_OBJECT = ['#fdd9b4', '#bae0ec', '#c2e2c7', '#e5cff4', '#c9d1f7', '#f8cdd4'];
+
+  Sequenced.renderAll = function() {
+    var canvasElements, _i, _len, _results;
+    canvasElements = document.getElementsByTagName('canvas');
+    _results = [];
+    for (_i = 0, _len = canvasElements.length; _i < _len; _i++) {
+      canvasElement = canvasElements[_i];
+      if (canvasElement.hasAttribute('sequenced')) {
+        _results.push(renderCanvasElement(canvasElement));
+      } else {
+        _results.push(void 0);
+      }
+    }
+    return _results;
+  };
 
   Sequenced.render = function(canvasElementId) {
     canvasElement = document.getElementById(canvasElementId);
-    sequenceData = DefinationParser.getSequenceData(canvasElement);
-    initCanvas();
-    initVariables();
-    drawObjects();
-    return drawMessages();
-  };
-
-  Sequenced.setLineHeight = function(height) {
-    return lineHeight = height;
+    return renderCanvasElement(canvasElement);
   };
 
   Sequenced.setObjectSize = function(width, height) {
@@ -84,32 +87,17 @@ Sequenced = (function() {
     return fontSize = value;
   };
 
-  initSequenceData = function() {
-    var maxRow, message, object, objectDictionary, objectIndex, _i, _j, _len, _len1, _ref, _ref1;
-    objectIndex = 0;
-    objectDictionary = {};
-    _ref = sequenceData.objects;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      object = _ref[_i];
-      object.index = objectIndex++;
-      objectDictionary[object.id] = object.index;
-    }
-    maxRow = 1;
-    _ref1 = sequenceData.messages;
-    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-      message = _ref1[_j];
-      message.fromObjectIndex = objectDictionary[message.from];
-      message.toObjectIndex = objectDictionary[message.to];
-      if (message.row > maxRow) {
-        maxRow = message.row;
-      }
-    }
-    return sequenceData.maxRow = maxRow;
+  renderCanvasElement = function(canvasElement) {
+    sequenceData = DefinationParser.getSequenceData(canvasElement);
+    initVariables();
+    initCanvas();
+    drawObjects();
+    return drawMessages();
   };
 
   initCanvas = function() {
     var height, scale, scaleHeight, scaleWidth, width;
-    columHeight = RowHeight * (sequenceData.maxRow + 1.5);
+    columHeight = objectHeight + RowHeight * (sequenceData.maxRow + 2 / 3 - 1 / 2);
     width = parseInt(canvasElement.width);
     height = (columHeight + Margin * 2) / DefaultCanvasWidth * width;
     scaleWidth = width * 2;
@@ -130,9 +118,6 @@ Sequenced = (function() {
     if (objectHeight === null) {
       objectHeight = DefaultObjectHeight;
     }
-    if (lineHeight === null) {
-      lineHeight = DefualtLineHeight;
-    }
     if (fontFamily === null) {
       fontFamily = DefaultFontFamily;
     }
@@ -145,37 +130,53 @@ Sequenced = (function() {
   };
 
   drawObjects = function() {
-    var index, objectKey, x, y, _results;
+    var index, object, objectKey, x, y, _results;
     index = 0;
     _results = [];
     for (objectKey in sequenceData.objects) {
       x = Margin + (DefaultCanvasWidth - objectWidth - Margin * 2) / (sequenceData.objectCount - 1) * index++;
       y = Margin;
-      _results.push(drawObject(x, y, objectWidth, objectHeight, objectKey, sequenceData.objects[objectKey]));
+      object = sequenceData.objects[objectKey];
+      _results.push(drawObject(x, y, objectWidth, objectHeight, objectKey, object));
     }
     return _results;
   };
 
-  drawObject = function(x, y, width, height, objectName, objectIndex) {
+  drawObject = function(x, y, width, height, objectName, object) {
     var getObjectColor;
     getObjectColor = function(index) {
       var colorIndex;
       colorIndex = index > 5 ? index - 6 : index;
       return Sequenced.COLOR_OBJECT[colorIndex];
     };
-    CanvasHelper.drawLifeline(ctx, x + objectWidth / 2, y + objectHeight, canvasElement.height / 2 - Margin * 2 - objectHeight, '#fff', COLOR_LIFELINE);
-    CanvasHelper.drawRoundedRect(ctx, x, y, width, height, getObjectColor(objectIndex), COLOR_OBJECT_BORDER, 5);
+    CanvasHelper.drawLifeline(ctx, x + objectWidth / 2, y + objectHeight, RowHeight * sequenceData.maxRow, '#fff', COLOR_LIFELINE);
+    drawActivations(x, y, object);
+    CanvasHelper.drawRoundedRect(ctx, x, y, width, height, getObjectColor(object.id), COLOR_OBJECT_BORDER, 5);
     return CanvasHelper.drawWrapText(ctx, objectName, x + objectWidth / 2, y + objectHeight / 2 + fontSize / 3, objectWidth - 10, 'bold', fontSize, fontColor, fontFamily);
   };
 
+  drawActivations = function(x, y, object) {
+    var activation, activationHeight, activationY, _i, _len, _ref, _results;
+    _ref = object.activations;
+    _results = [];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      activation = _ref[_i];
+      activationY = activation === 1 ? Margin + objectHeight : Margin + objectHeight + RowHeight * (activation - 5 / 6);
+      activationHeight = activation === 1 ? RowHeight * (1 + 1 / 6) : RowHeight;
+      _results.push(CanvasHelper.drawActivation(ctx, x + objectWidth / 2, activationY, activationHeight, RowHeight * sequenceData.maxRow, '#fff', COLOR_LIFELINE));
+    }
+    return _results;
+  };
+
   drawMessages = function() {
-    var message, _i, _len, _ref;
+    var message, _i, _len, _ref, _results;
     _ref = sequenceData.messages;
+    _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       message = _ref[_i];
-      drawMessage(message);
+      _results.push(drawMessage(message));
     }
-    return console.log(sequenceData.messages);
+    return _results;
   };
 
   drawMessage = function(message) {
@@ -183,11 +184,11 @@ Sequenced = (function() {
     getColumnPositionX = function(objectIndex) {
       return Margin + objectWidth / 2 + (DefaultCanvasWidth - objectWidth - Margin * 2) / (sequenceData.objectCount - 1) * objectIndex;
     };
-    y = RowHeight * (message.row + 1);
+    y = RowHeight * (message.row + 2 / 3);
     switch (message.direction) {
       case 'self':
         x = getColumnPositionX(message.fromObjectIndex);
-        return CanvasHelper.drawSelfArrow(ctx, x, y, COLOR_MESSAGE, fontSize, fontColor, fontFamily, message.text, message.isDashed);
+        return CanvasHelper.drawSelfArrow(ctx, x, y - RowHeight * 3 / 8, y + RowHeight * 3 / 8, COLOR_MESSAGE, fontSize, fontColor, fontFamily, message.text, message.isDashed);
       case 'right':
         x1 = getColumnPositionX(message.fromObjectIndex);
         x2 = getColumnPositionX(message.toObjectIndex);
@@ -204,7 +205,7 @@ Sequenced = (function() {
 })();
 
 CanvasHelper = (function() {
-  var ActivationWidth, ArrowHandleHeight, LifelineWidth, RowHeight;
+  var ActivationWidth, ArrowHandleHeight, LifelineWidth;
 
   function CanvasHelper() {}
 
@@ -214,12 +215,9 @@ CanvasHelper = (function() {
 
   ArrowHandleHeight = 8;
 
-  RowHeight = 50;
-
   CanvasHelper.drawRect = function(ctx, x, y, width, height, color) {
-    ctx.rect(x, y, width, height);
     ctx.fillStyle = color;
-    return ctx.fill();
+    return ctx.fillRect(x, y, width, height);
   };
 
   CanvasHelper.drawRoundedRect = function(ctx, x, y, width, height, color, borderColor, radius) {
@@ -265,7 +263,9 @@ CanvasHelper = (function() {
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
-    return this.drawWrapText(ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize, 'normal', fontSize, fontColor, fontFamily);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x1, y - ArrowHandleHeight * 1.8 - fontSize, x2 - x1 - ArrowHandleHeight, ArrowHandleHeight * 2.8);
+    return this.drawWrapText(ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize, 'normal', fontSize, fontColor, fontFamily, 'center', true);
   };
 
   CanvasHelper.drawLeftArrow = function(ctx, x1, x2, y, color, fontSize, fontColor, fontFamily, text, isDashed) {
@@ -291,25 +291,27 @@ CanvasHelper = (function() {
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
-    return this.drawWrapText(ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize, 'normal', fontSize, fontColor, fontFamily);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(x1 + ArrowHandleHeight, y - ArrowHandleHeight * 1.8 - fontSize, x2 - x1 - ArrowHandleHeight, ArrowHandleHeight * 2.8);
+    return this.drawWrapText(ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize, 'normal', fontSize, fontColor, fontFamily, 'center', true);
   };
 
-  CanvasHelper.drawSelfArrow = function(ctx, x, y, color, fontSize, fontColor, fontFamily, text, isDashed) {
-    var radius, y1, y2;
+  CanvasHelper.drawSelfArrow = function(ctx, x, y1, y2, color, fontSize, fontColor, fontFamily, text, isDashed) {
+    var radius;
     if (isDashed) {
       ctx.setLineDash([ArrowHandleHeight, ArrowHandleHeight]);
     } else {
       ctx.setLineDash([1, 0]);
     }
     x = x + ActivationWidth - LifelineWidth / 2;
-    y1 = y - RowHeight / 2;
-    y2 = y + RowHeight / 2;
-    radius = RowHeight / 2;
+    y1 = y1 + ArrowHandleHeight / 2;
+    y2 = y2 - ArrowHandleHeight / 2;
+    radius = (y2 - y1) / 2;
     ctx.beginPath();
     ctx.moveTo(x, y1);
     ctx.lineTo(x + ArrowHandleHeight, y1);
     ctx.arc(x + ArrowHandleHeight, y1 + radius, radius, 1.5 * Math.PI, 0.5 * Math.PI, false);
-    ctx.lineDashOffset = -0.5;
+    ctx.lineDashOffset = 2;
     ctx.strokeStyle = color;
     ctx.lineWidth = ArrowHandleHeight;
     ctx.stroke();
@@ -321,7 +323,7 @@ CanvasHelper = (function() {
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
-    return this.drawWrapText(ctx, text, x + ArrowHandleHeight * 2 + radius, y + fontSize / 2, 200 - fontSize, 'normal', fontSize, fontColor, fontFamily, 'left');
+    return this.drawWrapText(ctx, text, x + ArrowHandleHeight * 2 + radius, (y1 + y2) / 2 + fontSize / 2, 200 - fontSize, 'normal', fontSize, fontColor, fontFamily, 'left');
   };
 
   CanvasHelper.drawLifeline = function(ctx, x, y, height, startColor, stopColor) {
@@ -339,22 +341,34 @@ CanvasHelper = (function() {
     return ctx.setLineDash([1, 0]);
   };
 
-  CanvasHelper.drawWrapText = function(ctx, text, x, y, maxWidth, fontWeight, fontSize, fontColor, fontFamily, textAlign) {
-    var i, line, lineHeight, metrics, testLine, testWidth, words, yd, _i, _ref;
+  CanvasHelper.drawActivation = function(ctx, x, y, height, lifeLineHeight, startColor, stopColor) {
+    var gradient;
+    gradient = ctx.createLinearGradient(0, 0, 0, lifeLineHeight);
+    gradient.addColorStop(0, startColor);
+    gradient.addColorStop(1, stopColor);
+    ctx.beginPath();
+    ctx.moveTo(x, y + height);
+    ctx.lineTo(x, y);
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = ActivationWidth;
+    return ctx.stroke();
+  };
+
+  CanvasHelper.drawWrapText = function(ctx, text, x, y, maxWidth, fontWeight, fontSize, fontColor, fontFamily, textAlign, isDoubleLine) {
+    var i, line, lineHeight, testLine, testWidth, words, yd, _i, _ref;
     ctx.font = "" + fontWeight + " " + fontSize + "px " + fontFamily;
     ctx.textAlign = textAlign ? textAlign : 'center';
     ctx.fillStyle = fontColor;
-    x += 4;
+    x += fontSize * 1 / 3;
     words = text.split(' ');
     line = '';
     yd = 0;
     lineHeight = fontSize * 1.2;
     for (i = _i = 0, _ref = words.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
       testLine = line + words[i] + ' ';
-      metrics = ctx.measureText(testLine);
-      testWidth = metrics.width;
+      testWidth = ctx.measureText(testLine).width;
       if (testWidth > maxWidth && i > 0) {
-        yd = fontSize / 2 + 2;
+        yd = fontSize / 2;
         ctx.fillText(line, x, y - yd);
         line = words[i] + ' ';
         y += lineHeight;
@@ -373,7 +387,7 @@ DefinationParser = (function() {
   function DefinationParser() {}
 
   DefinationParser.getSequenceData = function(element) {
-    var direction, fromObjectIndex, getInnerText, innerText, match, messageType, objectFrom, objectIndex, objectTo, preMessage, regex, row, sequenceData, text, toObjectIndex;
+    var addActivation, direction, fromObjectIndex, getInnerText, innerText, match, messageType, objectFrom, objectIndex, objectTo, preMessage, regex, row, sequenceData, text, toObjectIndex;
     getInnerText = function(element) {
       if (element.childNodes.length === 0) {
         return '';
@@ -381,7 +395,16 @@ DefinationParser = (function() {
         return element.childNodes[0].nodeValue;
       }
     };
-    regex = /(.+\b)\s*(-->|->|<--|<-)\s*(.+\b)\s*:\s*(.+)\n?/gm;
+    addActivation = function(objectKey, row) {
+      var object;
+      object = sequenceData.objects[objectKey];
+      if (object.activations.length === 0) {
+        return object.activations.push(row);
+      } else if (object.activations[object.activations.length - 1] !== row) {
+        return object.activations.push(row);
+      }
+    };
+    regex = /(.+\b) *(-->|->) *(.+\b) *: *(.+)\n?/gm;
     sequenceData = {
       objects: {},
       objectCount: 0,
@@ -395,35 +418,41 @@ DefinationParser = (function() {
       messageType = match[2].trim();
       objectTo = match[3].trim();
       text = match[4].trim();
+      if (sequenceData.objects[objectFrom] === void 0) {
+        sequenceData.objects[objectFrom] = {
+          'id': objectIndex,
+          'activations': []
+        };
+        objectIndex++;
+      }
+      if (sequenceData.objects[objectTo] === void 0) {
+        sequenceData.objects[objectTo] = {
+          'id': objectIndex,
+          'activations': []
+        };
+        objectIndex++;
+      }
+      fromObjectIndex = sequenceData.objects[objectFrom].id;
+      toObjectIndex = sequenceData.objects[objectTo].id;
       if (objectFrom === objectTo) {
         direction = 'self';
-      } else if (messageType[0] === '<') {
+      } else if (fromObjectIndex > toObjectIndex) {
         direction = 'left';
       } else {
         direction = 'right';
       }
-      if (sequenceData.objects[objectFrom] === void 0) {
-        sequenceData.objects[objectFrom] = objectIndex;
-        objectIndex++;
-      }
-      if (sequenceData.objects[objectTo] === void 0) {
-        sequenceData.objects[objectTo] = objectIndex;
-        objectIndex++;
-      }
-      fromObjectIndex = sequenceData.objects[objectFrom];
-      toObjectIndex = sequenceData.objects[objectTo];
       if (sequenceData.messages.length === 0) {
         row = 1;
       } else {
         preMessage = sequenceData.messages[sequenceData.messages.length - 1];
-        if (preMessage.direction === 'self') {
-          row = preMessage.row + 2;
-        } else if (fromObjectIndex === preMessage.toObjectIndex && direction === preMessage.direction) {
+        if (fromObjectIndex === preMessage.toObjectIndex && direction === preMessage.direction && preMessage.direction === !'self') {
           row = preMessage.row;
         } else {
           row = preMessage.row + 1;
         }
       }
+      addActivation(objectFrom, row);
+      addActivation(objectTo, row);
       sequenceData.messages.push({
         'text': text,
         'direction': direction,

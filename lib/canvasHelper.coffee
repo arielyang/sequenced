@@ -3,12 +3,10 @@ class CanvasHelper
 	LifelineWidth = 8
 	ActivationWidth = 12
 	ArrowHandleHeight = 8
-	RowHeight = 50
 
 	@drawRect = (ctx, x, y, width, height, color) ->
-		ctx.rect x, y, width, height
 		ctx.fillStyle = color
-		ctx.fill()
+		ctx.fillRect x, y, width, height
 
 	@drawRoundedRect = (ctx, x, y, width, height, color, borderColor, radius) ->
 		x += 0.5
@@ -57,8 +55,14 @@ class CanvasHelper
 		ctx.fillStyle = color
 		ctx.fill();
 
+		ctx.fillStyle = '#fff'
+		ctx.fillRect x1, y - ArrowHandleHeight * 1.8 - fontSize, x2 - x1 - ArrowHandleHeight, ArrowHandleHeight * 2.8
+
 		@drawWrapText ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize,
-			'normal', fontSize, fontColor, fontFamily
+			'normal', fontSize, fontColor, fontFamily, 'center', true
+
+		# @drawWrapText ctx, text, (x1 + x2) / 2, y + fontSize + ArrowHandleHeight, x2 - x1 - fontSize,
+		# 	'normal', fontSize, fontColor, fontFamily, 'center', true
 
 	@drawLeftArrow = (ctx, x1, x2, y, color, fontSize, fontColor, fontFamily, text, isDashed) ->
 		if isDashed
@@ -87,26 +91,32 @@ class CanvasHelper
 		ctx.fillStyle = color
 		ctx.fill()
 
-		@drawWrapText ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize,
-			'normal', fontSize, fontColor, fontFamily
+		ctx.fillStyle = '#fff'
+		ctx.fillRect x1 + ArrowHandleHeight, y - ArrowHandleHeight * 1.8 - fontSize, x2 - x1 - ArrowHandleHeight, ArrowHandleHeight * 2.8
 
-	@drawSelfArrow = (ctx, x, y, color, fontSize, fontColor, fontFamily, text, isDashed) ->
+		@drawWrapText ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize,
+			'normal', fontSize, fontColor, fontFamily, 'center', true
+
+		# @drawWrapText ctx, text, (x1 + x2) / 2, y + fontSize + ArrowHandleHeight, x2 - x1 - fontSize,
+		# 	'normal', fontSize, fontColor, fontFamily, 'center', true
+
+	@drawSelfArrow = (ctx, x, y1, y2, color, fontSize, fontColor, fontFamily, text, isDashed) ->
 		if isDashed
 			ctx.setLineDash [ArrowHandleHeight, ArrowHandleHeight] # A "- - - - " dashed line.
 		else
 			ctx.setLineDash [1, 0]
 
 		x = x + ActivationWidth - LifelineWidth / 2
-		y1 = y - RowHeight / 2
-		y2 = y + RowHeight / 2
-		radius = RowHeight / 2
+		y1 = y1 + ArrowHandleHeight / 2
+		y2 = y2 - ArrowHandleHeight / 2
+		radius = (y2 - y1) / 2
 
 		# Arrow handle.
 		ctx.beginPath()
 		ctx.moveTo x, y1
 		ctx.lineTo x + ArrowHandleHeight, y1
 		ctx.arc x + ArrowHandleHeight, y1 + radius, radius, 1.5 * Math.PI, 0.5 * Math.PI, false
-		ctx.lineDashOffset = -0.5
+		ctx.lineDashOffset = 2
 		ctx.strokeStyle = color
 		ctx.lineWidth = ArrowHandleHeight
 		ctx.stroke()
@@ -120,41 +130,8 @@ class CanvasHelper
 		ctx.fillStyle = color
 		ctx.fill()
 
-		@drawWrapText ctx, text, x + ArrowHandleHeight * 2 + radius, y + fontSize / 2, 200 - fontSize,
+		@drawWrapText ctx, text, x + ArrowHandleHeight * 2 + radius, (y1 + y2) / 2 + fontSize / 2, 200 - fontSize,
 			'normal', fontSize, fontColor, fontFamily, 'left'
-
-	# @drawSelfLeftArrow = (ctx, x, y, color, fontSize, fontColor, fontFamily, text, isDashed) ->
-	# 	if isDashed
-	# 		ctx.setLineDash [ArrowHandleHeight, ArrowHandleHeight] # A "- - - - " dashed line.
-	# 	else
-	# 		ctx.setLineDash [1, 0]
-	#
-	# 	x = x - ActivationWidth + LifelineWidth / 2
-	# 	y1 = y - RowHeight / 2
-	# 	y2 = y + RowHeight / 2
-	# 	radius = RowHeight / 2
-	#
-	# 	# Arrow handle.
-	# 	ctx.beginPath()
-	# 	ctx.moveTo x, y1
-	# 	ctx.lineTo x - ArrowHandleHeight, y1
-	# 	ctx.arc x - ArrowHandleHeight, y1 + radius, radius, 1.5 * Math.PI, 0.5 * Math.PI, true
-	# 	ctx.lineDashOffset = -0.5
-	# 	ctx.strokeStyle = color
-	# 	ctx.lineWidth = ArrowHandleHeight
-	# 	ctx.stroke()
-	# 	ctx.setLineDash [1, 0] # Restore to solid line.
-	#
-	# 	ctx.beginPath()
-	# 	ctx.lineTo x - ArrowHandleHeight, y2 - ArrowHandleHeight
-	# 	ctx.lineTo x, y2
-	# 	ctx.lineTo x - ArrowHandleHeight, y2 + ArrowHandleHeight
-	# 	ctx.closePath()
-	# 	ctx.fillStyle = color
-	# 	ctx.fill()
-	#
-	# 	@drawWrapText ctx, text, x - ArrowHandleHeight * 2 - radius, y + fontSize / 2, 200 - fontSize,
-	# 		'normal', fontSize, fontColor, fontFamily, 'right'
 
 	@drawLifeline = (ctx, x, y, height, startColor, stopColor) ->
 		gradient = ctx.createLinearGradient(0, 0, 0, height);
@@ -170,12 +147,24 @@ class CanvasHelper
 		ctx.stroke()
 		ctx.setLineDash [1, 0] # Restore to solid line.
 
-	@drawWrapText = (ctx, text, x, y, maxWidth, fontWeight, fontSize, fontColor, fontFamily, textAlign) ->
+	@drawActivation = (ctx, x, y, height, lifeLineHeight, startColor, stopColor) ->
+		gradient = ctx.createLinearGradient(0, 0, 0, lifeLineHeight);
+		gradient.addColorStop(0, startColor);
+		gradient.addColorStop(1, stopColor);
+
+		ctx.beginPath()
+		ctx.moveTo x, y + height
+		ctx.lineTo x, y
+		ctx.strokeStyle = gradient
+		ctx.lineWidth = ActivationWidth
+		ctx.stroke()
+
+	@drawWrapText = (ctx, text, x, y, maxWidth, fontWeight, fontSize, fontColor, fontFamily, textAlign, isDoubleLine) ->
 		ctx.font = "#{fontWeight} #{fontSize}px #{fontFamily}"
 		ctx.textAlign = if textAlign then textAlign else 'center'
 		ctx.fillStyle = fontColor
 
-		x += 4
+		x += fontSize * 1 / 3
 		words = text.split ' '
 		line = ''
 		yd = 0
@@ -183,11 +172,10 @@ class CanvasHelper
 
 		for i in [0...words.length]
 			testLine = line + words[i] + ' '
-			metrics = ctx.measureText testLine
-			testWidth = metrics.width
+			testWidth = ctx.measureText(testLine).width
 
 			if (testWidth > maxWidth and i > 0)
-				yd = fontSize / 2 + 2
+				yd = fontSize / 2
 				ctx.fillText line, x, y - yd
 				line = words[i] + ' '
 				y += lineHeight

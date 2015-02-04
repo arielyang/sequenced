@@ -3,7 +3,6 @@ class Sequenced
 	ctx = null
 	objectWidth = null
 	objectHeight = null
-	lineHeight = null
 	fontFamily = null
 	fontColor = null
 	fontSize = null
@@ -17,14 +16,13 @@ class Sequenced
 	COLOR_LIFELINE = '#80aada' #87CEFA
 	COLOR_MESSAGE = '#f7ab42' #F4A460
 	DefaultCanvasWidth = 800
-	DefaultObjectWidth = 120
-	DefaultObjectHeight = 50
-	DefualtLineHeight = 18
-	DefaultFontFamily = 'Verdana'
+	DefaultObjectWidth = 100
+	DefaultObjectHeight = 40
+	DefaultFontFamily = 'Arial'
 	DefaultFontColor = '#000'
-	DefaultFontSize = 14
-	MaxObjectWidth = 150
-	RowHeight = 50
+	DefaultFontSize = 12
+	MaxObjectWidth = 100
+	RowHeight = 48
 	Margin = 10
 
 	# Predefined values.
@@ -32,26 +30,23 @@ class Sequenced
 		'#fdd9b4'
 		'#bae0ec'
 		'#c2e2c7'
-		'#c9d1f7'
 		'#e5cff4'
+		'#c9d1f7'
 		'#f8cdd4'
 	]
+
+	@renderAll = ->
+		canvasElements = document.getElementsByTagName 'canvas'
+
+		for canvasElement in canvasElements
+			if canvasElement.hasAttribute 'sequenced'
+				renderCanvasElement canvasElement
 
 	# Render a canvas element with sequence diagram data.
 	@render = (canvasElementId) ->
 		canvasElement = document.getElementById canvasElementId
 
-		sequenceData = DefinationParser.getSequenceData canvasElement
-
-		#initSequenceData()
-		initCanvas()
-		initVariables()
-
-		drawObjects()
-		drawMessages()
-
-	@setLineHeight = (height) ->
-		lineHeight = height
+		renderCanvasElement(canvasElement)
 
 	@setObjectSize = (width, height) ->
 		objectWidth = width
@@ -66,29 +61,17 @@ class Sequenced
 	@setFontSize = (value) ->
 		fontSize = value
 
-	initSequenceData = ->
-		# Initialize object index.
-		objectIndex = 0
-		objectDictionary = {}
+	renderCanvasElement = (canvasElement) ->
+		sequenceData = DefinationParser.getSequenceData canvasElement
 
-		for object in sequenceData.objects
-			object.index = objectIndex++
-			objectDictionary[object.id] = object.index
+		initVariables()
+		initCanvas()
 
-		# Initialize max row count and message index.
-		maxRow = 1
-		#messageIndex = 0
-
-		for message in sequenceData.messages
-			#message.index = messageIndex++
-			message.fromObjectIndex = objectDictionary[message.from]
-			message.toObjectIndex = objectDictionary[message.to]
-			maxRow = message.row if message.row > maxRow
-
-		sequenceData.maxRow = maxRow
+		drawObjects()
+		drawMessages()
 
 	initCanvas = ->
-		columHeight = RowHeight * (sequenceData.maxRow + 1.5)
+		columHeight = objectHeight + RowHeight * (sequenceData.maxRow + 2 / 3 - 1 / 2)
 
 		width = parseInt canvasElement.width
 		height = (columHeight + Margin * 2) / DefaultCanvasWidth * width
@@ -109,7 +92,6 @@ class Sequenced
 	initVariables = ->
 		objectWidth = DefaultObjectWidth if objectWidth is null
 		objectHeight = DefaultObjectHeight if objectHeight is null
-		lineHeight = DefualtLineHeight if lineHeight is null
 		fontFamily = DefaultFontFamily if fontFamily is null
 		fontColor = DefaultFontColor if fontColor is null
 		fontSize = DefaultFontSize if fontSize is null
@@ -123,10 +105,12 @@ class Sequenced
 			x = Margin + (DefaultCanvasWidth - objectWidth - Margin * 2) / (sequenceData.objectCount - 1) * index++
 			y = Margin
 
-			drawObject x, y, objectWidth, objectHeight, objectKey, sequenceData.objects[objectKey]
+			object = sequenceData.objects[objectKey]
+
+			drawObject x, y, objectWidth, objectHeight, objectKey, object
 
 	# Render concrete object.
-	drawObject = (x, y, width, height, objectName, objectIndex) ->
+	drawObject = (x, y, width, height, objectName, object) ->
 		# Get a color by index from inner color table.
 		getObjectColor = (index) ->
 			colorIndex = if index > 5 then index - 6 else index
@@ -134,33 +118,44 @@ class Sequenced
 			Sequenced.COLOR_OBJECT[colorIndex]
 
 		# Draw lifeline.
+		# CanvasHelper.drawLifeline ctx, x + objectWidth / 2, y + objectHeight,
+		# 	canvasElement.height / 2 - Margin * 2 - objectHeight, '#fff', COLOR_LIFELINE
+
 		CanvasHelper.drawLifeline ctx, x + objectWidth / 2, y + objectHeight,
-			canvasElement.height / 2 - Margin * 2 - objectHeight, '#fff', COLOR_LIFELINE
+			RowHeight * sequenceData.maxRow, '#fff', COLOR_LIFELINE
+
+		# Draw activations.
+		drawActivations(x, y, object)
 
 		# Draw object.
 		CanvasHelper.drawRoundedRect ctx, x, y, width, height,
-			getObjectColor(objectIndex), COLOR_OBJECT_BORDER, 5
+			getObjectColor(object.id), COLOR_OBJECT_BORDER, 5
 
 		# Draw object text.
 		CanvasHelper.drawWrapText ctx, objectName, x + objectWidth / 2, y + (objectHeight) / 2 + fontSize / 3,
 			objectWidth - 10, 'bold', fontSize, fontColor, fontFamily
 
+	drawActivations = (x, y, object) ->
+		for activation in object.activations
+			activationY = if activation is 1 then Margin + objectHeight else Margin + objectHeight + RowHeight * (activation - 5 / 6)
+			activationHeight = if activation is 1 then RowHeight * (1 + 1 / 6) else RowHeight
+			CanvasHelper.drawActivation ctx, x + objectWidth / 2, activationY,
+				activationHeight, RowHeight * sequenceData.maxRow, '#fff', COLOR_LIFELINE
+
 	drawMessages = ->
 		drawMessage message for message in sequenceData.messages
-
-		console.log sequenceData.messages
 
 	drawMessage = (message) ->
 		getColumnPositionX = (objectIndex) ->
 			Margin + objectWidth / 2 + (DefaultCanvasWidth - objectWidth - Margin * 2) / (sequenceData.objectCount - 1) * objectIndex
 
-		y = RowHeight * (message.row + 1)
+		y = RowHeight * (message.row + 2 / 3)
 
 		switch message.direction
 			when 'self'
 				x = getColumnPositionX(message.fromObjectIndex)
 
-				CanvasHelper.drawSelfArrow ctx, x, y, COLOR_MESSAGE,
+				CanvasHelper.drawSelfArrow ctx, x, y - RowHeight * 3 / 8, y  + RowHeight * 3 / 8, COLOR_MESSAGE,
 					fontSize, fontColor, fontFamily, message.text, message.isDashed
 			when 'right'
 				x1 = getColumnPositionX(message.fromObjectIndex)
@@ -180,12 +175,10 @@ class CanvasHelper
 	LifelineWidth = 8
 	ActivationWidth = 12
 	ArrowHandleHeight = 8
-	RowHeight = 50
 
 	@drawRect = (ctx, x, y, width, height, color) ->
-		ctx.rect x, y, width, height
 		ctx.fillStyle = color
-		ctx.fill()
+		ctx.fillRect x, y, width, height
 
 	@drawRoundedRect = (ctx, x, y, width, height, color, borderColor, radius) ->
 		x += 0.5
@@ -234,8 +227,14 @@ class CanvasHelper
 		ctx.fillStyle = color
 		ctx.fill();
 
+		ctx.fillStyle = '#fff'
+		ctx.fillRect x1, y - ArrowHandleHeight * 1.8 - fontSize, x2 - x1 - ArrowHandleHeight, ArrowHandleHeight * 2.8
+
 		@drawWrapText ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize,
-			'normal', fontSize, fontColor, fontFamily
+			'normal', fontSize, fontColor, fontFamily, 'center', true
+
+		# @drawWrapText ctx, text, (x1 + x2) / 2, y + fontSize + ArrowHandleHeight, x2 - x1 - fontSize,
+		# 	'normal', fontSize, fontColor, fontFamily, 'center', true
 
 	@drawLeftArrow = (ctx, x1, x2, y, color, fontSize, fontColor, fontFamily, text, isDashed) ->
 		if isDashed
@@ -264,26 +263,32 @@ class CanvasHelper
 		ctx.fillStyle = color
 		ctx.fill()
 
-		@drawWrapText ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize,
-			'normal', fontSize, fontColor, fontFamily
+		ctx.fillStyle = '#fff'
+		ctx.fillRect x1 + ArrowHandleHeight, y - ArrowHandleHeight * 1.8 - fontSize, x2 - x1 - ArrowHandleHeight, ArrowHandleHeight * 2.8
 
-	@drawSelfArrow = (ctx, x, y, color, fontSize, fontColor, fontFamily, text, isDashed) ->
+		@drawWrapText ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize,
+			'normal', fontSize, fontColor, fontFamily, 'center', true
+
+		# @drawWrapText ctx, text, (x1 + x2) / 2, y + fontSize + ArrowHandleHeight, x2 - x1 - fontSize,
+		# 	'normal', fontSize, fontColor, fontFamily, 'center', true
+
+	@drawSelfArrow = (ctx, x, y1, y2, color, fontSize, fontColor, fontFamily, text, isDashed) ->
 		if isDashed
 			ctx.setLineDash [ArrowHandleHeight, ArrowHandleHeight] # A "- - - - " dashed line.
 		else
 			ctx.setLineDash [1, 0]
 
 		x = x + ActivationWidth - LifelineWidth / 2
-		y1 = y - RowHeight / 2
-		y2 = y + RowHeight / 2
-		radius = RowHeight / 2
+		y1 = y1 + ArrowHandleHeight / 2
+		y2 = y2 - ArrowHandleHeight / 2
+		radius = (y2 - y1) / 2
 
 		# Arrow handle.
 		ctx.beginPath()
 		ctx.moveTo x, y1
 		ctx.lineTo x + ArrowHandleHeight, y1
 		ctx.arc x + ArrowHandleHeight, y1 + radius, radius, 1.5 * Math.PI, 0.5 * Math.PI, false
-		ctx.lineDashOffset = -0.5
+		ctx.lineDashOffset = 2
 		ctx.strokeStyle = color
 		ctx.lineWidth = ArrowHandleHeight
 		ctx.stroke()
@@ -297,41 +302,8 @@ class CanvasHelper
 		ctx.fillStyle = color
 		ctx.fill()
 
-		@drawWrapText ctx, text, x + ArrowHandleHeight * 2 + radius, y + fontSize / 2, 200 - fontSize,
+		@drawWrapText ctx, text, x + ArrowHandleHeight * 2 + radius, (y1 + y2) / 2 + fontSize / 2, 200 - fontSize,
 			'normal', fontSize, fontColor, fontFamily, 'left'
-
-	# @drawSelfLeftArrow = (ctx, x, y, color, fontSize, fontColor, fontFamily, text, isDashed) ->
-	# 	if isDashed
-	# 		ctx.setLineDash [ArrowHandleHeight, ArrowHandleHeight] # A "- - - - " dashed line.
-	# 	else
-	# 		ctx.setLineDash [1, 0]
-	#
-	# 	x = x - ActivationWidth + LifelineWidth / 2
-	# 	y1 = y - RowHeight / 2
-	# 	y2 = y + RowHeight / 2
-	# 	radius = RowHeight / 2
-	#
-	# 	# Arrow handle.
-	# 	ctx.beginPath()
-	# 	ctx.moveTo x, y1
-	# 	ctx.lineTo x - ArrowHandleHeight, y1
-	# 	ctx.arc x - ArrowHandleHeight, y1 + radius, radius, 1.5 * Math.PI, 0.5 * Math.PI, true
-	# 	ctx.lineDashOffset = -0.5
-	# 	ctx.strokeStyle = color
-	# 	ctx.lineWidth = ArrowHandleHeight
-	# 	ctx.stroke()
-	# 	ctx.setLineDash [1, 0] # Restore to solid line.
-	#
-	# 	ctx.beginPath()
-	# 	ctx.lineTo x - ArrowHandleHeight, y2 - ArrowHandleHeight
-	# 	ctx.lineTo x, y2
-	# 	ctx.lineTo x - ArrowHandleHeight, y2 + ArrowHandleHeight
-	# 	ctx.closePath()
-	# 	ctx.fillStyle = color
-	# 	ctx.fill()
-	#
-	# 	@drawWrapText ctx, text, x - ArrowHandleHeight * 2 - radius, y + fontSize / 2, 200 - fontSize,
-	# 		'normal', fontSize, fontColor, fontFamily, 'right'
 
 	@drawLifeline = (ctx, x, y, height, startColor, stopColor) ->
 		gradient = ctx.createLinearGradient(0, 0, 0, height);
@@ -347,12 +319,24 @@ class CanvasHelper
 		ctx.stroke()
 		ctx.setLineDash [1, 0] # Restore to solid line.
 
-	@drawWrapText = (ctx, text, x, y, maxWidth, fontWeight, fontSize, fontColor, fontFamily, textAlign) ->
+	@drawActivation = (ctx, x, y, height, lifeLineHeight, startColor, stopColor) ->
+		gradient = ctx.createLinearGradient(0, 0, 0, lifeLineHeight);
+		gradient.addColorStop(0, startColor);
+		gradient.addColorStop(1, stopColor);
+
+		ctx.beginPath()
+		ctx.moveTo x, y + height
+		ctx.lineTo x, y
+		ctx.strokeStyle = gradient
+		ctx.lineWidth = ActivationWidth
+		ctx.stroke()
+
+	@drawWrapText = (ctx, text, x, y, maxWidth, fontWeight, fontSize, fontColor, fontFamily, textAlign, isDoubleLine) ->
 		ctx.font = "#{fontWeight} #{fontSize}px #{fontFamily}"
 		ctx.textAlign = if textAlign then textAlign else 'center'
 		ctx.fillStyle = fontColor
 
-		x += 4
+		x += fontSize * 1 / 3
 		words = text.split ' '
 		line = ''
 		yd = 0
@@ -360,11 +344,10 @@ class CanvasHelper
 
 		for i in [0...words.length]
 			testLine = line + words[i] + ' '
-			metrics = ctx.measureText testLine
-			testWidth = metrics.width
+			testWidth = ctx.measureText(testLine).width
 
 			if (testWidth > maxWidth and i > 0)
-				yd = fontSize / 2 + 2
+				yd = fontSize / 2
 				ctx.fillText line, x, y - yd
 				line = words[i] + ' '
 				y += lineHeight
@@ -381,7 +364,15 @@ class DefinationParser
 			else
 				element.childNodes[0].nodeValue
 
-		regex = /(.+\b)\s*(-->|->|<--|<-)\s*(.+\b)\s*:\s*(.+)\n?/gm
+		addActivation = (objectKey, row) ->
+			object = sequenceData.objects[objectKey]
+
+			if object.activations.length is 0
+				object.activations.push row
+			else if object.activations[object.activations.length - 1] isnt row
+				object.activations.push row
+
+		regex = /(.+\b) *(-->|->) *(.+\b) *: *(.+)\n?/gm
 
 		sequenceData = {
 			objects: {}
@@ -400,35 +391,43 @@ class DefinationParser
 			objectTo = match[3].trim()
 			text = match[4].trim()
 
-			if objectFrom is objectTo
-				direction = 'self'
-			else if messageType[0] is '<'
-				direction = 'left'
-			else
-				direction = 'right'
-
 			if sequenceData.objects[objectFrom] is undefined
-				sequenceData.objects[objectFrom] = objectIndex
+				sequenceData.objects[objectFrom] = {
+					'id': objectIndex
+					'activations': []
+				}
 				objectIndex++
 
 			if sequenceData.objects[objectTo] is undefined
-				sequenceData.objects[objectTo] = objectIndex
+				sequenceData.objects[objectTo] = {
+					'id': objectIndex
+					'activations': []
+				}
 				objectIndex++
 
-			fromObjectIndex = sequenceData.objects[objectFrom]
-			toObjectIndex = sequenceData.objects[objectTo]
+			fromObjectIndex = sequenceData.objects[objectFrom].id
+			toObjectIndex = sequenceData.objects[objectTo].id
+
+			if objectFrom is objectTo
+				direction = 'self'
+			else if fromObjectIndex > toObjectIndex
+				direction = 'left'
+			else
+				direction = 'right'
 
 			if sequenceData.messages.length is 0
 				row = 1
 			else
 				preMessage = sequenceData.messages[sequenceData.messages.length - 1]
 
-				if preMessage.direction is 'self'
-					row = preMessage.row + 2
-				else if fromObjectIndex is preMessage.toObjectIndex and direction is preMessage.direction
-					row = preMessage.row
-				else
-					row = preMessage.row + 1
+				if fromObjectIndex is preMessage.toObjectIndex and
+					direction is preMessage.direction and
+					preMessage.direction is not 'self'
+				then row = preMessage.row
+				else row = preMessage.row + 1
+
+			addActivation objectFrom, row
+			addActivation objectTo, row
 
 			sequenceData.messages.push
 				'text': text

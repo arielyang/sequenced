@@ -6,15 +6,15 @@
 </head>
 <body>
 	<div style="margin:10px;border: 1px solid #ccc;width:802px">
-		<canvas id="canvasSequenced" width="800">
+		<canvas id="canvasSequenced" width="800" sequenced>
 			App -> App: 获取当前登录的 UserId
 			App -> App Server: 通过 UserId 请求 Token
 			App Server -> Rong Cloud API Server: 通过 UserId 请求 Token
-			Rong Cloud API Server <-- App Server: 返回 Token
-			App Server <- App Server: 数据库存储 Token
-			App Server <-- App: 返回 Token
-			App <-- App: 返回 Token
-			App <- App: 本地存储
+			Rong Cloud API Server --> App Server: 返回 Token
+			App Server -> App Server: 数据库存储 Token
+			App Server --> App: 返回 Token
+			App --> App: 返回 Token
+			App -> App: 本地存储
 			App -> Rong Cloud IM Server: 通过 connect 方法附带 Token 连接到聊天服务器
 		</canvas>
 	</div>
@@ -22,11 +22,11 @@
 	<script type="text/javascript" src="server.json"></script>
 	<script type="text/javascript">
 		//Sequenced.setObjectSize(120, 50);
-		//Sequenced.setLineHeight(18);
 		//Sequenced.setFontFamily(‘Verdana’);
 		//Sequenced.setFontColor(‘#000’);
 		//Sequenced.setFontSize(14);
 
-		Sequenced.render('canvasSequenced');
+		//Sequenced.render('canvasSequenced');
+		Sequenced.renderAll();
 	</script>
 </body>

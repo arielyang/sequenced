@@ -19,12 +19,13 @@ module.exports = (grunt) ->
 				dest: 'dest/sequenced.coffee'
 
 		uglify:
-			compress:
+			target:
 				options:
 					mangle: true
 				target:
 					files:
-						'dest/sequenced.min.js': ['lib/sequenced.js']
+						'dest/sequenced.min.js': 'dest/sequenced.js'
+				cwd: '.'
 
 		watch:
 			build:
@@ -68,5 +69,5 @@ module.exports = (grunt) ->
 
 	# Uglify and compress dest js file.
 	grunt.registerTask 'compress', [
-		'uglify:compress'
+		'uglify:target'
 	]

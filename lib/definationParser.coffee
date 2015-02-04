@@ -6,7 +6,15 @@ class DefinationParser
 			else
 				element.childNodes[0].nodeValue
 
-		regex = /(.+\b)\s*(-->|->|<--|<-)\s*(.+\b)\s*:\s*(.+)\n?/gm
+		addActivation = (objectKey, row) ->
+			object = sequenceData.objects[objectKey]
+
+			if object.activations.length is 0
+				object.activations.push row
+			else if object.activations[object.activations.length - 1] isnt row
+				object.activations.push row
+
+		regex = /(.+\b) *(-->|->) *(.+\b) *: *(.+)\n?/gm
 
 		sequenceData = {
 			objects: {}
@@ -25,35 +33,43 @@ class DefinationParser
 			objectTo = match[3].trim()
 			text = match[4].trim()
 
-			if objectFrom is objectTo
-				direction = 'self'
-			else if messageType[0] is '<'
-				direction = 'left'
-			else
-				direction = 'right'
-
 			if sequenceData.objects[objectFrom] is undefined
-				sequenceData.objects[objectFrom] = objectIndex
+				sequenceData.objects[objectFrom] = {
+					'id': objectIndex
+					'activations': []
+				}
 				objectIndex++
 
 			if sequenceData.objects[objectTo] is undefined
-				sequenceData.objects[objectTo] = objectIndex
+				sequenceData.objects[objectTo] = {
+					'id': objectIndex
+					'activations': []
+				}
 				objectIndex++
 
-			fromObjectIndex = sequenceData.objects[objectFrom]
-			toObjectIndex = sequenceData.objects[objectTo]
+			fromObjectIndex = sequenceData.objects[objectFrom].id
+			toObjectIndex = sequenceData.objects[objectTo].id
+
+			if objectFrom is objectTo
+				direction = 'self'
+			else if fromObjectIndex > toObjectIndex
+				direction = 'left'
+			else
+				direction = 'right'
 
 			if sequenceData.messages.length is 0
 				row = 1
 			else
 				preMessage = sequenceData.messages[sequenceData.messages.length - 1]
 
-				if preMessage.direction is 'self'
-					row = preMessage.row + 2
-				else if fromObjectIndex is preMessage.toObjectIndex and direction is preMessage.direction
-					row = preMessage.row
-				else
-					row = preMessage.row + 1
+				if fromObjectIndex is preMessage.toObjectIndex and
+					direction is preMessage.direction and
+					preMessage.direction is not 'self'
+				then row = preMessage.row
+				else row = preMessage.row + 1
+
+			addActivation objectFrom, row
+			addActivation objectTo, row
 
 			sequenceData.messages.push
 				'text': text
