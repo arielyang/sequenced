@@ -1,29 +1,16 @@
 class Sequenced
-	# Globals variables.
-	ctx = null
-	objectWidth = null
-	objectHeight = null
-	fontFamily = null
-	fontColor = null
-	fontSize = null
-
-	canvasElement = null
-	sequenceData = null
-	columHeight = null
-
 	# Constants.
 	COLOR_OBJECT_BORDER = '#c0c0c0' #C0C0C0
 	COLOR_LIFELINE = '#80aada' #87CEFA
 	COLOR_MESSAGE = '#f7ab42' #F4A460
-	DefaultCanvasWidth = 800
-	DefaultObjectWidth = 120
-	DefaultObjectHeight = 40
-	DefaultFontFamily = 'Arial'
-	DefaultFontColor = '#000'
-	DefaultFontSize = 12
-	MaxObjectWidth = 100
-	RowHeight = 48
-	Margin = 10
+	DEFAULT_CANVAS_WIDTH = 800
+	DEFAULT_OBJECT_WIDTH = 120
+	DEFAULT_OBJECT_HEIGHT = 40
+	DEFAULT_FONT_FAMILY = 'Arial'
+	DEFAULT_FONT_COLOR = '#000'
+	DEFAULT_FONT_SIZE = 12
+	ROW_HEIGHT = 48
+	MARGIN = 10
 
 	# Predefined values.
 	@COLOR_OBJECT = [
@@ -35,7 +22,22 @@ class Sequenced
 		'#f8cdd4'
 	]
 
+	# Globals variables.
+	ctx = null
+	objectWidth = null
+	objectHeight = null
+	fontFamily = null
+	fontColor = null
+	fontSize = null
+
+	canvasElement = null
+	sequenceData = null
+	columnHeight = null
+	columnWidth = null
+
 	@renderAll = ->
+		initVariables()
+
 		canvasElements = document.getElementsByTagName 'canvas'
 
 		for canvasElement in canvasElements
@@ -44,9 +46,11 @@ class Sequenced
 
 	# Render a canvas element with sequence diagram data.
 	@render = (canvasElementId) ->
+		initVariables()
+
 		canvasElement = document.getElementById canvasElementId
 
-		renderCanvasElement(canvasElement)
+		renderCanvasElement canvasElement
 
 	@setObjectSize = (width, height) ->
 		objectWidth = width
@@ -64,20 +68,22 @@ class Sequenced
 	renderCanvasElement = (canvasElement) ->
 		sequenceData = DefinationParser.getSequenceData canvasElement
 
-		initVariables()
 		initCanvas()
 
 		drawObjects()
 		drawMessages()
 
 	initCanvas = ->
-		columHeight = objectHeight + RowHeight * (sequenceData.maxRow + 2 / 3 - 1 / 2)
+		columnHeight = objectHeight + ROW_HEIGHT * (sequenceData.maxRow + 2 / 3 - 1 / 2)
+		columnWidth = (DEFAULT_CANVAS_WIDTH - objectWidth - MARGIN * 2) / (sequenceData.objectCount - 1)
+
+		CanvasHelper.defineColumnWidth columnWidth
 
 		width = parseInt canvasElement.width
-		height = (columHeight + Margin * 2) / DefaultCanvasWidth * width
+		height = (columnHeight + MARGIN * 2) / DEFAULT_CANVAS_WIDTH * width
 		scaleWidth = width * 2
 		scaleHeight = height * 2
-		scale = scaleWidth / DefaultCanvasWidth
+		scale = scaleWidth / DEFAULT_CANVAS_WIDTH
 
 		# Set canvas element properties.
 		canvasElement.style.width = width + 'px'
@@ -90,11 +96,11 @@ class Sequenced
 		ctx.scale scale, scale
 
 	initVariables = ->
-		objectWidth = DefaultObjectWidth if objectWidth is null
-		objectHeight = DefaultObjectHeight if objectHeight is null
-		fontFamily = DefaultFontFamily if fontFamily is null
-		fontColor = DefaultFontColor if fontColor is null
-		fontSize = DefaultFontSize if fontSize is null
+		objectWidth = DEFAULT_OBJECT_WIDTH if objectWidth is null
+		objectHeight = DEFAULT_OBJECT_HEIGHT if objectHeight is null
+		fontFamily = DEFAULT_FONT_FAMILY if fontFamily is null
+		fontColor = DEFAULT_FONT_COLOR if fontColor is null
+		fontSize = DEFAULT_FONT_SIZE if fontSize is null
 
 	# Render all objects.
 	drawObjects = ->
@@ -102,8 +108,8 @@ class Sequenced
 
 		for objectKey of sequenceData.objects
 
-			x = Margin + (DefaultCanvasWidth - objectWidth - Margin * 2) / (sequenceData.objectCount - 1) * index++
-			y = Margin
+			x = MARGIN + columnWidth * index++
+			y = MARGIN
 
 			object = sequenceData.objects[objectKey]
 
@@ -118,11 +124,8 @@ class Sequenced
 			Sequenced.COLOR_OBJECT[colorIndex]
 
 		# Draw lifeline.
-		# CanvasHelper.drawLifeline ctx, x + objectWidth / 2, y + objectHeight,
-		# 	canvasElement.height / 2 - Margin * 2 - objectHeight, '#fff', COLOR_LIFELINE
-
 		CanvasHelper.drawLifeline ctx, x + objectWidth / 2, y + objectHeight,
-			RowHeight * sequenceData.maxRow, '#fff', COLOR_LIFELINE
+			ROW_HEIGHT * sequenceData.maxRow, '#fff', COLOR_LIFELINE
 
 		# Draw activations.
 		drawActivations(x, y, object)
@@ -137,25 +140,25 @@ class Sequenced
 
 	drawActivations = (x, y, object) ->
 		for activation in object.activations
-			activationY = if activation is 1 then Margin + objectHeight else Margin + objectHeight + RowHeight * (activation - 5 / 6)
-			activationHeight = if activation is 1 then RowHeight * (1 + 1 / 6) else RowHeight
+			activationY = if activation is 1 then MARGIN + objectHeight else MARGIN + objectHeight + ROW_HEIGHT * (activation - 5 / 6)
+			activationHeight = if activation is 1 then ROW_HEIGHT * (1 + 1 / 6) else ROW_HEIGHT
 			CanvasHelper.drawActivation ctx, x + objectWidth / 2, activationY,
-				activationHeight, RowHeight * sequenceData.maxRow, '#fff', COLOR_LIFELINE
+				activationHeight, ROW_HEIGHT * sequenceData.maxRow, '#fff', COLOR_LIFELINE
 
 	drawMessages = ->
 		drawMessage message for message in sequenceData.messages
 
 	drawMessage = (message) ->
 		getColumnPositionX = (objectIndex) ->
-			Margin + objectWidth / 2 + (DefaultCanvasWidth - objectWidth - Margin * 2) / (sequenceData.objectCount - 1) * objectIndex
+			MARGIN + objectWidth / 2 + (DEFAULT_CANVAS_WIDTH - objectWidth - MARGIN * 2) / (sequenceData.objectCount - 1) * objectIndex
 
-		y = RowHeight * (message.row + 2 / 3)
+		y = ROW_HEIGHT * (message.row + 2 / 3)
 
 		switch message.direction
 			when 'self'
 				x = getColumnPositionX(message.fromObjectIndex)
 
-				CanvasHelper.drawSelfArrow ctx, x, y - RowHeight * 3 / 8, y  + RowHeight * 3 / 8, COLOR_MESSAGE,
+				CanvasHelper.drawSelfArrow ctx, x, y - ROW_HEIGHT * 3 / 8, y  + ROW_HEIGHT * 3 / 8, COLOR_MESSAGE,
 					fontSize, fontColor, fontFamily, message.text, message.isDashed
 			when 'right'
 				x1 = getColumnPositionX(message.fromObjectIndex)
@@ -171,10 +174,16 @@ class Sequenced
 					fontSize, fontColor, fontFamily, message.text, message.isDashed
 
 class CanvasHelper
-	# Inner Constants.
-	LifelineWidth = 8
-	ActivationWidth = 12
-	ArrowHandleHeight = 8
+	# Constants.
+	LIFELINE_WIDTH = 8
+	ACTIVATION_WIDTH = 12
+	ARROW_HANDLE_HEIGHT = 8
+
+	# Globals variables.
+	colWidth = null
+
+	@defineColumnWidth = (columnWidth) ->
+		colWidth = columnWidth
 
 	@drawRect = (ctx, x, y, width, height, color) ->
 		ctx.fillStyle = color
@@ -201,108 +210,96 @@ class CanvasHelper
 
 	@drawRightArrow = (ctx, x1, x2, y, color, fontSize, fontColor, fontFamily, text, isDashed) ->
 		if isDashed
-			ctx.setLineDash [ArrowHandleHeight, ArrowHandleHeight] # A "- - - - " dashed line.
+			ctx.setLineDash [ARROW_HANDLE_HEIGHT, ARROW_HANDLE_HEIGHT] # A "- - - - " dashed line.
 		else
 			ctx.setLineDash [1, 0]
 
-		x1 = x1 + ActivationWidth - LifelineWidth / 2
-		x2 = x2 - ActivationWidth + LifelineWidth / 2
+		x1 = x1 + ACTIVATION_WIDTH - LIFELINE_WIDTH / 2
+		x2 = x2 - ACTIVATION_WIDTH + LIFELINE_WIDTH / 2
 
 		# Arrow handle.
 		ctx.beginPath()
-		ctx.moveTo x2 - ArrowHandleHeight, y
+		ctx.moveTo x2 - ARROW_HANDLE_HEIGHT, y
 		ctx.lineTo x1, y
-		ctx.lineDashOffset = ArrowHandleHeight / 3
+		ctx.lineDashOffset = ARROW_HANDLE_HEIGHT / 3
 		ctx.strokeStyle = color
-		ctx.lineWidth = ArrowHandleHeight
+		ctx.lineWidth = ARROW_HANDLE_HEIGHT
 		ctx.stroke()
 		ctx.setLineDash [1, 0] # Restore to solid line.
 
 		# Arrow.
 		ctx.beginPath()
-		ctx.moveTo x2 - ArrowHandleHeight, y - ArrowHandleHeight
+		ctx.moveTo x2 - ARROW_HANDLE_HEIGHT, y - ARROW_HANDLE_HEIGHT
 		ctx.lineTo x2, y
-		ctx.lineTo x2 - ArrowHandleHeight, y + ArrowHandleHeight
+		ctx.lineTo x2 - ARROW_HANDLE_HEIGHT, y + ARROW_HANDLE_HEIGHT
 		ctx.closePath()
 		ctx.fillStyle = color
 		ctx.fill();
 
-		ctx.fillStyle = '#fff'
-		ctx.fillRect x1, y - ArrowHandleHeight * 1.8 - fontSize, x2 - x1 - ArrowHandleHeight, ArrowHandleHeight * 2.8
-
 		@drawWrapText ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize,
 			'normal', fontSize, fontColor, fontFamily, 'center', true
 
-		# @drawWrapText ctx, text, (x1 + x2) / 2, y + fontSize + ArrowHandleHeight, x2 - x1 - fontSize,
-		# 	'normal', fontSize, fontColor, fontFamily, 'center', true
-
 	@drawLeftArrow = (ctx, x1, x2, y, color, fontSize, fontColor, fontFamily, text, isDashed) ->
 		if isDashed
-			ctx.setLineDash [ArrowHandleHeight, ArrowHandleHeight] # A "- - - - " dashed line.
+			ctx.setLineDash [ARROW_HANDLE_HEIGHT, ARROW_HANDLE_HEIGHT] # A "- - - - " dashed line.
 		else
 			ctx.setLineDash [1, 0]
 
-		x1 = x1 + ActivationWidth - LifelineWidth / 2
-		x2 = x2 - ActivationWidth + LifelineWidth / 2
+		x1 = x1 + ACTIVATION_WIDTH - LIFELINE_WIDTH / 2
+		x2 = x2 - ACTIVATION_WIDTH + LIFELINE_WIDTH / 2
 
 		# Arrow handle.
 		ctx.beginPath()
-		ctx.moveTo x1 + ArrowHandleHeight, y
+		ctx.moveTo x1 + ARROW_HANDLE_HEIGHT, y
 		ctx.lineTo x2, y
-		ctx.lineDashOffset = ArrowHandleHeight / 3
+		ctx.lineDashOffset = ARROW_HANDLE_HEIGHT / 3
 		ctx.strokeStyle = color
-		ctx.lineWidth = ArrowHandleHeight
+		ctx.lineWidth = ARROW_HANDLE_HEIGHT
 		ctx.stroke()
 		ctx.setLineDash [1, 0] # Restore to solid line.
 
 		ctx.beginPath()
-		ctx.lineTo x1 + ArrowHandleHeight, y - ArrowHandleHeight
+		ctx.lineTo x1 + ARROW_HANDLE_HEIGHT, y - ARROW_HANDLE_HEIGHT
 		ctx.lineTo x1, y
-		ctx.lineTo x1 + ArrowHandleHeight, y + ArrowHandleHeight
+		ctx.lineTo x1 + ARROW_HANDLE_HEIGHT, y + ARROW_HANDLE_HEIGHT
 		ctx.closePath()
 		ctx.fillStyle = color
 		ctx.fill()
 
-		ctx.fillStyle = '#fff'
-		ctx.fillRect x1 + ArrowHandleHeight, y - ArrowHandleHeight * 1.8 - fontSize, x2 - x1 - ArrowHandleHeight, ArrowHandleHeight * 2.8
-
 		@drawWrapText ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize,
 			'normal', fontSize, fontColor, fontFamily, 'center', true
 
-		# @drawWrapText ctx, text, (x1 + x2) / 2, y + fontSize + ArrowHandleHeight, x2 - x1 - fontSize,
-		# 	'normal', fontSize, fontColor, fontFamily, 'center', true
-
 	@drawSelfArrow = (ctx, x, y1, y2, color, fontSize, fontColor, fontFamily, text, isDashed) ->
 		if isDashed
-			ctx.setLineDash [ArrowHandleHeight, ArrowHandleHeight] # A "- - - - " dashed line.
+			ctx.setLineDash [ARROW_HANDLE_HEIGHT, ARROW_HANDLE_HEIGHT] # A "- - - - " dashed line.
 		else
 			ctx.setLineDash [1, 0]
 
-		x = x + ActivationWidth - LifelineWidth / 2
-		y1 = y1 + ArrowHandleHeight / 2
-		y2 = y2 - ArrowHandleHeight / 2
+		x = x + ACTIVATION_WIDTH - LIFELINE_WIDTH / 2
+		y1 = y1 + ARROW_HANDLE_HEIGHT / 2
+		y2 = y2 - ARROW_HANDLE_HEIGHT / 2
 		radius = (y2 - y1) / 2
 
 		# Arrow handle.
 		ctx.beginPath()
 		ctx.moveTo x, y1
-		ctx.lineTo x + ArrowHandleHeight, y1
-		ctx.arc x + ArrowHandleHeight, y1 + radius, radius, 1.5 * Math.PI, 0.5 * Math.PI, false
+		ctx.lineTo x + ARROW_HANDLE_HEIGHT, y1
+		ctx.arc x + ARROW_HANDLE_HEIGHT, y1 + radius, radius, 1.5 * Math.PI, 0.5 * Math.PI, false
 		ctx.lineDashOffset = 2
 		ctx.strokeStyle = color
-		ctx.lineWidth = ArrowHandleHeight
+		ctx.lineWidth = ARROW_HANDLE_HEIGHT
 		ctx.stroke()
 		ctx.setLineDash [1, 0] # Restore to solid line.
 
 		ctx.beginPath()
-		ctx.lineTo x + ArrowHandleHeight, y2 - ArrowHandleHeight
+		ctx.lineTo x + ARROW_HANDLE_HEIGHT, y2 - ARROW_HANDLE_HEIGHT
 		ctx.lineTo x, y2
-		ctx.lineTo x + ArrowHandleHeight, y2 + ArrowHandleHeight
+		ctx.lineTo x + ARROW_HANDLE_HEIGHT, y2 + ARROW_HANDLE_HEIGHT
 		ctx.closePath()
 		ctx.fillStyle = color
 		ctx.fill()
 
-		@drawWrapText ctx, text, x + ArrowHandleHeight * 2 + radius, (y1 + y2) / 2 + fontSize / 2, 200 - fontSize,
+		@drawWrapText ctx, text, x + ARROW_HANDLE_HEIGHT * 2 + radius, (y1 + y2) / 2 + fontSize / 2, colWidth - radius - ARROW_HANDLE_HEIGHT * 2 - fontSize,
 			'normal', fontSize, fontColor, fontFamily, 'left'
 
 	@drawLifeline = (ctx, x, y, height, startColor, stopColor) ->
@@ -313,9 +310,9 @@ class CanvasHelper
 		ctx.beginPath()
 		ctx.moveTo x, y + height
 		ctx.lineTo x, y
-		ctx.setLineDash [LifelineWidth * 2, LifelineWidth] # A "-- -- -- -- " dashed line.
+		ctx.setLineDash [LIFELINE_WIDTH * 2, LIFELINE_WIDTH] # A "-- -- -- -- " dashed line.
 		ctx.strokeStyle = gradient
-		ctx.lineWidth = LifelineWidth
+		ctx.lineWidth = LIFELINE_WIDTH
 		ctx.stroke()
 		ctx.setLineDash [1, 0] # Restore to solid line.
 
@@ -328,7 +325,7 @@ class CanvasHelper
 		ctx.moveTo x, y + height
 		ctx.lineTo x, y
 		ctx.strokeStyle = gradient
-		ctx.lineWidth = ActivationWidth
+		ctx.lineWidth = ACTIVATION_WIDTH
 		ctx.stroke()
 
 	@drawWrapText = (ctx, text, x, y, maxWidth, fontWeight, fontSize, fontColor, fontFamily, textAlign, isDoubleLine) ->
@@ -337,19 +334,25 @@ class CanvasHelper
 		ctx.fillStyle = fontColor
 
 		x += fontSize * 1 / 3
-		words = text.split ' '
+		words = text.split '\t'
 		line = ''
 		yd = 0
-		lineHeight = fontSize * 1.2
+		if isDoubleLine
+			lineHeight = ARROW_HANDLE_HEIGHT * 2 + fontSize * 2
+		else
+			lineHeight = fontSize * 1.2
 
 		for i in [0...words.length]
-			testLine = line + words[i] + ' '
+			testLine = line + words[i]
 			testWidth = ctx.measureText(testLine).width
 
 			if (testWidth > maxWidth and i > 0)
 				yd = fontSize / 2
-				ctx.fillText line, x, y - yd
-				line = words[i] + ' '
+				if isDoubleLine
+					ctx.fillText line, x, y
+				else
+					ctx.fillText line, x, y - yd
+				line = words[i]
 				y += lineHeight
 			else
 				line = testLine;

@@ -1,5 +1,3 @@
-#uglifyjs dest/sequenced.js --compress --mangle -o dest/sequenced.min.js
-
 module.exports = (grunt) ->
 
 	# Project configuration.
@@ -9,6 +7,9 @@ module.exports = (grunt) ->
 		exec:
 			compile:
 				command: 'coffee -c -b dest/sequenced.coffee'
+				cwd: '.'
+			compress:
+				command: 'uglifyjs dest/sequenced.js --compress --mangle -o dest/sequenced.min.js --preamble "// Sequenced v<%= pkg.version %> | arielyang@github | MIT Licensed"'
 				cwd: '.'
 
 		concat:
@@ -47,7 +48,7 @@ module.exports = (grunt) ->
 			server:
 				options:
 					keepalive: true
-					port: 8080
+					port: 8081
 					base: '.'
 
 	# These plugins provide necessary tasks.

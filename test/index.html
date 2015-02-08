@@ -6,6 +6,18 @@
 </head>
 <body>
 	<div style="margin:10px;border: 1px solid #ccc;width:802px">
+		<canvas id="canvasSequenced_sendImageMessage" width="800" sequenced>
+			App -> SDK: 设置并实现用户信息提供者	RongIM.setGetUserInfoProvider(provider)
+			SDK UI -> SDK: 界面显示用户信息	（如聊天或者会话列表）
+			SDK -> App: 调用第一步设置的 provider.getUserInfo	方法，传入 userId
+			App -> App Server: 获取指定 userId 的用户信息
+			App Server --> App: 返回指定 userId 的用户信息
+			App -> App: 本地缓存该用户信息，以备	下次调用
+			App --> SDK: 返回指定 userId 的用户信息
+			SDK --> SDK UI: 返回指定 userId 的用户信息
+		</canvas>
+	</div>
+	<div style="margin:10px;border: 1px solid #ccc;width:802px">
 		<canvas id="canvasSequenced" width="800" sequenced>
 			App -> App: 获取当前登录的 UserId
 			App -> App Server: 通过 UserId 请求 Token
@@ -19,7 +31,6 @@
 		</canvas>
 	</div>
 	<script type="text/javascript" src="../dest/sequenced.js"></script>
-	<script type="text/javascript" src="server.json"></script>
 	<script type="text/javascript">
 		//Sequenced.setObjectSize(120, 50);
 		//Sequenced.setFontFamily(‘Verdana’);

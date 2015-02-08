@@ -1,6 +1,6 @@
 {
   "name": "sequenced",
-  "version": "0.1.0",
+  "version": "0.9.1",
   "description": "Generate simple sequence diagram on HTML canvas from data source.",
   "main": "index.js",
   "scripts": {

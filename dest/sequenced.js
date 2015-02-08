@@ -2,9 +2,33 @@
 var CanvasHelper, DefinationParser, Sequenced;
 
 Sequenced = (function() {
-  var COLOR_LIFELINE, COLOR_MESSAGE, COLOR_OBJECT_BORDER, DefaultCanvasWidth, DefaultFontColor, DefaultFontFamily, DefaultFontSize, DefaultObjectHeight, DefaultObjectWidth, Margin, MaxObjectWidth, RowHeight, canvasElement, columHeight, ctx, drawActivations, drawMessage, drawMessages, drawObject, drawObjects, fontColor, fontFamily, fontSize, initCanvas, initVariables, objectHeight, objectWidth, renderCanvasElement, sequenceData;
+  var COLOR_LIFELINE, COLOR_MESSAGE, COLOR_OBJECT_BORDER, DEFAULT_CANVAS_WIDTH, DEFAULT_FONT_COLOR, DEFAULT_FONT_FAMILY, DEFAULT_FONT_SIZE, DEFAULT_OBJECT_HEIGHT, DEFAULT_OBJECT_WIDTH, MARGIN, ROW_HEIGHT, canvasElement, columnHeight, columnWidth, ctx, drawActivations, drawMessage, drawMessages, drawObject, drawObjects, fontColor, fontFamily, fontSize, initCanvas, initVariables, objectHeight, objectWidth, renderCanvasElement, sequenceData;
 
   function Sequenced() {}
+
+  COLOR_OBJECT_BORDER = '#c0c0c0';
+
+  COLOR_LIFELINE = '#80aada';
+
+  COLOR_MESSAGE = '#f7ab42';
+
+  DEFAULT_CANVAS_WIDTH = 800;
+
+  DEFAULT_OBJECT_WIDTH = 120;
+
+  DEFAULT_OBJECT_HEIGHT = 40;
+
+  DEFAULT_FONT_FAMILY = 'Arial';
+
+  DEFAULT_FONT_COLOR = '#000';
+
+  DEFAULT_FONT_SIZE = 12;
+
+  ROW_HEIGHT = 48;
+
+  MARGIN = 10;
+
+  Sequenced.COLOR_OBJECT = ['#fdd9b4', '#bae0ec', '#c2e2c7', '#e5cff4', '#c9d1f7', '#f8cdd4'];
 
   ctx = null;
 
@@ -22,36 +46,13 @@ Sequenced = (function() {
 
   sequenceData = null;
 
-  columHeight = null;
+  columnHeight = null;
 
-  COLOR_OBJECT_BORDER = '#c0c0c0';
-
-  COLOR_LIFELINE = '#80aada';
-
-  COLOR_MESSAGE = '#f7ab42';
-
-  DefaultCanvasWidth = 800;
-
-  DefaultObjectWidth = 120;
-
-  DefaultObjectHeight = 40;
-
-  DefaultFontFamily = 'Arial';
-
-  DefaultFontColor = '#000';
-
-  DefaultFontSize = 12;
-
-  MaxObjectWidth = 100;
-
-  RowHeight = 48;
-
-  Margin = 10;
-
-  Sequenced.COLOR_OBJECT = ['#fdd9b4', '#bae0ec', '#c2e2c7', '#e5cff4', '#c9d1f7', '#f8cdd4'];
+  columnWidth = null;
 
   Sequenced.renderAll = function() {
     var canvasElements, _i, _len, _results;
+    initVariables();
     canvasElements = document.getElementsByTagName('canvas');
     _results = [];
     for (_i = 0, _len = canvasElements.length; _i < _len; _i++) {
@@ -66,6 +67,7 @@ Sequenced = (function() {
   };
 
   Sequenced.render = function(canvasElementId) {
+    initVariables();
     canvasElement = document.getElementById(canvasElementId);
     return renderCanvasElement(canvasElement);
   };
@@ -89,7 +91,6 @@ Sequenced = (function() {
 
   renderCanvasElement = function(canvasElement) {
     sequenceData = DefinationParser.getSequenceData(canvasElement);
-    initVariables();
     initCanvas();
     drawObjects();
     return drawMessages();
@@ -97,12 +98,14 @@ Sequenced = (function() {
 
   initCanvas = function() {
     var height, scale, scaleHeight, scaleWidth, width;
-    columHeight = objectHeight + RowHeight * (sequenceData.maxRow + 2 / 3 - 1 / 2);
+    columnHeight = objectHeight + ROW_HEIGHT * (sequenceData.maxRow + 2 / 3 - 1 / 2);
+    columnWidth = (DEFAULT_CANVAS_WIDTH - objectWidth - MARGIN * 2) / (sequenceData.objectCount - 1);
+    CanvasHelper.defineColumnWidth(columnWidth);
     width = parseInt(canvasElement.width);
-    height = (columHeight + Margin * 2) / DefaultCanvasWidth * width;
+    height = (columnHeight + MARGIN * 2) / DEFAULT_CANVAS_WIDTH * width;
     scaleWidth = width * 2;
     scaleHeight = height * 2;
-    scale = scaleWidth / DefaultCanvasWidth;
+    scale = scaleWidth / DEFAULT_CANVAS_WIDTH;
     canvasElement.style.width = width + 'px';
     canvasElement.style.height = height + 'px';
     canvasElement.width = scaleWidth;
@@ -113,19 +116,19 @@ Sequenced = (function() {
 
   initVariables = function() {
     if (objectWidth === null) {
-      objectWidth = DefaultObjectWidth;
+      objectWidth = DEFAULT_OBJECT_WIDTH;
     }
     if (objectHeight === null) {
-      objectHeight = DefaultObjectHeight;
+      objectHeight = DEFAULT_OBJECT_HEIGHT;
     }
     if (fontFamily === null) {
-      fontFamily = DefaultFontFamily;
+      fontFamily = DEFAULT_FONT_FAMILY;
     }
     if (fontColor === null) {
-      fontColor = DefaultFontColor;
+      fontColor = DEFAULT_FONT_COLOR;
     }
     if (fontSize === null) {
-      return fontSize = DefaultFontSize;
+      return fontSize = DEFAULT_FONT_SIZE;
     }
   };
 
@@ -134,8 +137,8 @@ Sequenced = (function() {
     index = 0;
     _results = [];
     for (objectKey in sequenceData.objects) {
-      x = Margin + (DefaultCanvasWidth - objectWidth - Margin * 2) / (sequenceData.objectCount - 1) * index++;
-      y = Margin;
+      x = MARGIN + columnWidth * index++;
+      y = MARGIN;
       object = sequenceData.objects[objectKey];
       _results.push(drawObject(x, y, objectWidth, objectHeight, objectKey, object));
     }
@@ -149,7 +152,7 @@ Sequenced = (function() {
       colorIndex = index > 5 ? index - 6 : index;
       return Sequenced.COLOR_OBJECT[colorIndex];
     };
-    CanvasHelper.drawLifeline(ctx, x + objectWidth / 2, y + objectHeight, RowHeight * sequenceData.maxRow, '#fff', COLOR_LIFELINE);
+    CanvasHelper.drawLifeline(ctx, x + objectWidth / 2, y + objectHeight, ROW_HEIGHT * sequenceData.maxRow, '#fff', COLOR_LIFELINE);
     drawActivations(x, y, object);
     CanvasHelper.drawRoundedRect(ctx, x, y, width, height, getObjectColor(object.id), COLOR_OBJECT_BORDER, 5);
     return CanvasHelper.drawWrapText(ctx, objectName, x + objectWidth / 2, y + objectHeight / 2 + fontSize / 3, objectWidth - 10, 'bold', fontSize, fontColor, fontFamily);
@@ -161,9 +164,9 @@ Sequenced = (function() {
     _results = [];
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       activation = _ref[_i];
-      activationY = activation === 1 ? Margin + objectHeight : Margin + objectHeight + RowHeight * (activation - 5 / 6);
-      activationHeight = activation === 1 ? RowHeight * (1 + 1 / 6) : RowHeight;
-      _results.push(CanvasHelper.drawActivation(ctx, x + objectWidth / 2, activationY, activationHeight, RowHeight * sequenceData.maxRow, '#fff', COLOR_LIFELINE));
+      activationY = activation === 1 ? MARGIN + objectHeight : MARGIN + objectHeight + ROW_HEIGHT * (activation - 5 / 6);
+      activationHeight = activation === 1 ? ROW_HEIGHT * (1 + 1 / 6) : ROW_HEIGHT;
+      _results.push(CanvasHelper.drawActivation(ctx, x + objectWidth / 2, activationY, activationHeight, ROW_HEIGHT * sequenceData.maxRow, '#fff', COLOR_LIFELINE));
     }
     return _results;
   };
@@ -182,13 +185,13 @@ Sequenced = (function() {
   drawMessage = function(message) {
     var getColumnPositionX, x, x1, x2, y;
     getColumnPositionX = function(objectIndex) {
-      return Margin + objectWidth / 2 + (DefaultCanvasWidth - objectWidth - Margin * 2) / (sequenceData.objectCount - 1) * objectIndex;
+      return MARGIN + objectWidth / 2 + (DEFAULT_CANVAS_WIDTH - objectWidth - MARGIN * 2) / (sequenceData.objectCount - 1) * objectIndex;
     };
-    y = RowHeight * (message.row + 2 / 3);
+    y = ROW_HEIGHT * (message.row + 2 / 3);
     switch (message.direction) {
       case 'self':
         x = getColumnPositionX(message.fromObjectIndex);
-        return CanvasHelper.drawSelfArrow(ctx, x, y - RowHeight * 3 / 8, y + RowHeight * 3 / 8, COLOR_MESSAGE, fontSize, fontColor, fontFamily, message.text, message.isDashed);
+        return CanvasHelper.drawSelfArrow(ctx, x, y - ROW_HEIGHT * 3 / 8, y + ROW_HEIGHT * 3 / 8, COLOR_MESSAGE, fontSize, fontColor, fontFamily, message.text, message.isDashed);
       case 'right':
         x1 = getColumnPositionX(message.fromObjectIndex);
         x2 = getColumnPositionX(message.toObjectIndex);
@@ -205,15 +208,21 @@ Sequenced = (function() {
 })();
 
 CanvasHelper = (function() {
-  var ActivationWidth, ArrowHandleHeight, LifelineWidth;
+  var ACTIVATION_WIDTH, ARROW_HANDLE_HEIGHT, LIFELINE_WIDTH, colWidth;
 
   function CanvasHelper() {}
 
-  LifelineWidth = 8;
+  LIFELINE_WIDTH = 8;
 
-  ActivationWidth = 12;
+  ACTIVATION_WIDTH = 12;
 
-  ArrowHandleHeight = 8;
+  ARROW_HANDLE_HEIGHT = 8;
+
+  colWidth = null;
+
+  CanvasHelper.defineColumnWidth = function(columnWidth) {
+    return colWidth = columnWidth;
+  };
 
   CanvasHelper.drawRect = function(ctx, x, y, width, height, color) {
     ctx.fillStyle = color;
@@ -242,88 +251,84 @@ CanvasHelper = (function() {
 
   CanvasHelper.drawRightArrow = function(ctx, x1, x2, y, color, fontSize, fontColor, fontFamily, text, isDashed) {
     if (isDashed) {
-      ctx.setLineDash([ArrowHandleHeight, ArrowHandleHeight]);
+      ctx.setLineDash([ARROW_HANDLE_HEIGHT, ARROW_HANDLE_HEIGHT]);
     } else {
       ctx.setLineDash([1, 0]);
     }
-    x1 = x1 + ActivationWidth - LifelineWidth / 2;
-    x2 = x2 - ActivationWidth + LifelineWidth / 2;
+    x1 = x1 + ACTIVATION_WIDTH - LIFELINE_WIDTH / 2;
+    x2 = x2 - ACTIVATION_WIDTH + LIFELINE_WIDTH / 2;
     ctx.beginPath();
-    ctx.moveTo(x2 - ArrowHandleHeight, y);
+    ctx.moveTo(x2 - ARROW_HANDLE_HEIGHT, y);
     ctx.lineTo(x1, y);
-    ctx.lineDashOffset = ArrowHandleHeight / 3;
+    ctx.lineDashOffset = ARROW_HANDLE_HEIGHT / 3;
     ctx.strokeStyle = color;
-    ctx.lineWidth = ArrowHandleHeight;
+    ctx.lineWidth = ARROW_HANDLE_HEIGHT;
     ctx.stroke();
     ctx.setLineDash([1, 0]);
     ctx.beginPath();
-    ctx.moveTo(x2 - ArrowHandleHeight, y - ArrowHandleHeight);
+    ctx.moveTo(x2 - ARROW_HANDLE_HEIGHT, y - ARROW_HANDLE_HEIGHT);
     ctx.lineTo(x2, y);
-    ctx.lineTo(x2 - ArrowHandleHeight, y + ArrowHandleHeight);
+    ctx.lineTo(x2 - ARROW_HANDLE_HEIGHT, y + ARROW_HANDLE_HEIGHT);
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(x1, y - ArrowHandleHeight * 1.8 - fontSize, x2 - x1 - ArrowHandleHeight, ArrowHandleHeight * 2.8);
     return this.drawWrapText(ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize, 'normal', fontSize, fontColor, fontFamily, 'center', true);
   };
 
   CanvasHelper.drawLeftArrow = function(ctx, x1, x2, y, color, fontSize, fontColor, fontFamily, text, isDashed) {
     if (isDashed) {
-      ctx.setLineDash([ArrowHandleHeight, ArrowHandleHeight]);
+      ctx.setLineDash([ARROW_HANDLE_HEIGHT, ARROW_HANDLE_HEIGHT]);
     } else {
       ctx.setLineDash([1, 0]);
     }
-    x1 = x1 + ActivationWidth - LifelineWidth / 2;
-    x2 = x2 - ActivationWidth + LifelineWidth / 2;
+    x1 = x1 + ACTIVATION_WIDTH - LIFELINE_WIDTH / 2;
+    x2 = x2 - ACTIVATION_WIDTH + LIFELINE_WIDTH / 2;
     ctx.beginPath();
-    ctx.moveTo(x1 + ArrowHandleHeight, y);
+    ctx.moveTo(x1 + ARROW_HANDLE_HEIGHT, y);
     ctx.lineTo(x2, y);
-    ctx.lineDashOffset = ArrowHandleHeight / 3;
+    ctx.lineDashOffset = ARROW_HANDLE_HEIGHT / 3;
     ctx.strokeStyle = color;
-    ctx.lineWidth = ArrowHandleHeight;
+    ctx.lineWidth = ARROW_HANDLE_HEIGHT;
     ctx.stroke();
     ctx.setLineDash([1, 0]);
     ctx.beginPath();
-    ctx.lineTo(x1 + ArrowHandleHeight, y - ArrowHandleHeight);
+    ctx.lineTo(x1 + ARROW_HANDLE_HEIGHT, y - ARROW_HANDLE_HEIGHT);
     ctx.lineTo(x1, y);
-    ctx.lineTo(x1 + ArrowHandleHeight, y + ArrowHandleHeight);
+    ctx.lineTo(x1 + ARROW_HANDLE_HEIGHT, y + ARROW_HANDLE_HEIGHT);
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(x1 + ArrowHandleHeight, y - ArrowHandleHeight * 1.8 - fontSize, x2 - x1 - ArrowHandleHeight, ArrowHandleHeight * 2.8);
     return this.drawWrapText(ctx, text, (x1 + x2) / 2, y - fontSize, x2 - x1 - fontSize, 'normal', fontSize, fontColor, fontFamily, 'center', true);
   };
 
   CanvasHelper.drawSelfArrow = function(ctx, x, y1, y2, color, fontSize, fontColor, fontFamily, text, isDashed) {
     var radius;
     if (isDashed) {
-      ctx.setLineDash([ArrowHandleHeight, ArrowHandleHeight]);
+      ctx.setLineDash([ARROW_HANDLE_HEIGHT, ARROW_HANDLE_HEIGHT]);
     } else {
       ctx.setLineDash([1, 0]);
     }
-    x = x + ActivationWidth - LifelineWidth / 2;
-    y1 = y1 + ArrowHandleHeight / 2;
-    y2 = y2 - ArrowHandleHeight / 2;
+    x = x + ACTIVATION_WIDTH - LIFELINE_WIDTH / 2;
+    y1 = y1 + ARROW_HANDLE_HEIGHT / 2;
+    y2 = y2 - ARROW_HANDLE_HEIGHT / 2;
     radius = (y2 - y1) / 2;
     ctx.beginPath();
     ctx.moveTo(x, y1);
-    ctx.lineTo(x + ArrowHandleHeight, y1);
-    ctx.arc(x + ArrowHandleHeight, y1 + radius, radius, 1.5 * Math.PI, 0.5 * Math.PI, false);
+    ctx.lineTo(x + ARROW_HANDLE_HEIGHT, y1);
+    ctx.arc(x + ARROW_HANDLE_HEIGHT, y1 + radius, radius, 1.5 * Math.PI, 0.5 * Math.PI, false);
     ctx.lineDashOffset = 2;
     ctx.strokeStyle = color;
-    ctx.lineWidth = ArrowHandleHeight;
+    ctx.lineWidth = ARROW_HANDLE_HEIGHT;
     ctx.stroke();
     ctx.setLineDash([1, 0]);
     ctx.beginPath();
-    ctx.lineTo(x + ArrowHandleHeight, y2 - ArrowHandleHeight);
+    ctx.lineTo(x + ARROW_HANDLE_HEIGHT, y2 - ARROW_HANDLE_HEIGHT);
     ctx.lineTo(x, y2);
-    ctx.lineTo(x + ArrowHandleHeight, y2 + ArrowHandleHeight);
+    ctx.lineTo(x + ARROW_HANDLE_HEIGHT, y2 + ARROW_HANDLE_HEIGHT);
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
-    return this.drawWrapText(ctx, text, x + ArrowHandleHeight * 2 + radius, (y1 + y2) / 2 + fontSize / 2, 200 - fontSize, 'normal', fontSize, fontColor, fontFamily, 'left');
+    return this.drawWrapText(ctx, text, x + ARROW_HANDLE_HEIGHT * 2 + radius, (y1 + y2) / 2 + fontSize / 2, colWidth - radius - ARROW_HANDLE_HEIGHT * 2 - fontSize, 'normal', fontSize, fontColor, fontFamily, 'left');
   };
 
   CanvasHelper.drawLifeline = function(ctx, x, y, height, startColor, stopColor) {
@@ -334,9 +339,9 @@ CanvasHelper = (function() {
     ctx.beginPath();
     ctx.moveTo(x, y + height);
     ctx.lineTo(x, y);
-    ctx.setLineDash([LifelineWidth * 2, LifelineWidth]);
+    ctx.setLineDash([LIFELINE_WIDTH * 2, LIFELINE_WIDTH]);
     ctx.strokeStyle = gradient;
-    ctx.lineWidth = LifelineWidth;
+    ctx.lineWidth = LIFELINE_WIDTH;
     ctx.stroke();
     return ctx.setLineDash([1, 0]);
   };
@@ -350,7 +355,7 @@ CanvasHelper = (function() {
     ctx.moveTo(x, y + height);
     ctx.lineTo(x, y);
     ctx.strokeStyle = gradient;
-    ctx.lineWidth = ActivationWidth;
+    ctx.lineWidth = ACTIVATION_WIDTH;
     return ctx.stroke();
   };
 
@@ -360,17 +365,25 @@ CanvasHelper = (function() {
     ctx.textAlign = textAlign ? textAlign : 'center';
     ctx.fillStyle = fontColor;
     x += fontSize * 1 / 3;
-    words = text.split(' ');
+    words = text.split('\t');
     line = '';
     yd = 0;
-    lineHeight = fontSize * 1.2;
+    if (isDoubleLine) {
+      lineHeight = ARROW_HANDLE_HEIGHT * 2 + fontSize * 2;
+    } else {
+      lineHeight = fontSize * 1.2;
+    }
     for (i = _i = 0, _ref = words.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-      testLine = line + words[i] + ' ';
+      testLine = line + words[i];
       testWidth = ctx.measureText(testLine).width;
       if (testWidth > maxWidth && i > 0) {
         yd = fontSize / 2;
-        ctx.fillText(line, x, y - yd);
-        line = words[i] + ' ';
+        if (isDoubleLine) {
+          ctx.fillText(line, x, y);
+        } else {
+          ctx.fillText(line, x, y - yd);
+        }
+        line = words[i];
         y += lineHeight;
       } else {
         line = testLine;

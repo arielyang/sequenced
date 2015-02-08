@@ -1,29 +1,16 @@
 class Sequenced
-	# Globals variables.
-	ctx = null
-	objectWidth = null
-	objectHeight = null
-	fontFamily = null
-	fontColor = null
-	fontSize = null
-
-	canvasElement = null
-	sequenceData = null
-	columHeight = null
-
 	# Constants.
 	COLOR_OBJECT_BORDER = '#c0c0c0' #C0C0C0
 	COLOR_LIFELINE = '#80aada' #87CEFA
 	COLOR_MESSAGE = '#f7ab42' #F4A460
-	DefaultCanvasWidth = 800
-	DefaultObjectWidth = 120
-	DefaultObjectHeight = 40
-	DefaultFontFamily = 'Arial'
-	DefaultFontColor = '#000'
-	DefaultFontSize = 12
-	MaxObjectWidth = 100
-	RowHeight = 48
-	Margin = 10
+	DEFAULT_CANVAS_WIDTH = 800
+	DEFAULT_OBJECT_WIDTH = 120
+	DEFAULT_OBJECT_HEIGHT = 40
+	DEFAULT_FONT_FAMILY = 'Arial'
+	DEFAULT_FONT_COLOR = '#000'
+	DEFAULT_FONT_SIZE = 12
+	ROW_HEIGHT = 48
+	MARGIN = 10
 
 	# Predefined values.
 	@COLOR_OBJECT = [
@@ -35,7 +22,22 @@ class Sequenced
 		'#f8cdd4'
 	]
 
+	# Globals variables.
+	ctx = null
+	objectWidth = null
+	objectHeight = null
+	fontFamily = null
+	fontColor = null
+	fontSize = null
+
+	canvasElement = null
+	sequenceData = null
+	columnHeight = null
+	columnWidth = null
+
 	@renderAll = ->
+		initVariables()
+
 		canvasElements = document.getElementsByTagName 'canvas'
 
 		for canvasElement in canvasElements
@@ -44,9 +46,11 @@ class Sequenced
 
 	# Render a canvas element with sequence diagram data.
 	@render = (canvasElementId) ->
+		initVariables()
+
 		canvasElement = document.getElementById canvasElementId
 
-		renderCanvasElement(canvasElement)
+		renderCanvasElement canvasElement
 
 	@setObjectSize = (width, height) ->
 		objectWidth = width
@@ -64,20 +68,22 @@ class Sequenced
 	renderCanvasElement = (canvasElement) ->
 		sequenceData = DefinationParser.getSequenceData canvasElement
 
-		initVariables()
 		initCanvas()
 
 		drawObjects()
 		drawMessages()
 
 	initCanvas = ->
-		columHeight = objectHeight + RowHeight * (sequenceData.maxRow + 2 / 3 - 1 / 2)
+		columnHeight = objectHeight + ROW_HEIGHT * (sequenceData.maxRow + 2 / 3 - 1 / 2)
+		columnWidth = (DEFAULT_CANVAS_WIDTH - objectWidth - MARGIN * 2) / (sequenceData.objectCount - 1)
+
+		CanvasHelper.defineColumnWidth columnWidth
 
 		width = parseInt canvasElement.width
-		height = (columHeight + Margin * 2) / DefaultCanvasWidth * width
+		height = (columnHeight + MARGIN * 2) / DEFAULT_CANVAS_WIDTH * width
 		scaleWidth = width * 2
 		scaleHeight = height * 2
-		scale = scaleWidth / DefaultCanvasWidth
+		scale = scaleWidth / DEFAULT_CANVAS_WIDTH
 
 		# Set canvas element properties.
 		canvasElement.style.width = width + 'px'
@@ -90,11 +96,11 @@ class Sequenced
 		ctx.scale scale, scale
 
 	initVariables = ->
-		objectWidth = DefaultObjectWidth if objectWidth is null
-		objectHeight = DefaultObjectHeight if objectHeight is null
-		fontFamily = DefaultFontFamily if fontFamily is null
-		fontColor = DefaultFontColor if fontColor is null
-		fontSize = DefaultFontSize if fontSize is null
+		objectWidth = DEFAULT_OBJECT_WIDTH if objectWidth is null
+		objectHeight = DEFAULT_OBJECT_HEIGHT if objectHeight is null
+		fontFamily = DEFAULT_FONT_FAMILY if fontFamily is null
+		fontColor = DEFAULT_FONT_COLOR if fontColor is null
+		fontSize = DEFAULT_FONT_SIZE if fontSize is null
 
 	# Render all objects.
 	drawObjects = ->
@@ -102,8 +108,8 @@ class Sequenced
 
 		for objectKey of sequenceData.objects
 
-			x = Margin + (DefaultCanvasWidth - objectWidth - Margin * 2) / (sequenceData.objectCount - 1) * index++
-			y = Margin
+			x = MARGIN + columnWidth * index++
+			y = MARGIN
 
 			object = sequenceData.objects[objectKey]
 
@@ -118,11 +124,8 @@ class Sequenced
 			Sequenced.COLOR_OBJECT[colorIndex]
 
 		# Draw lifeline.
-		# CanvasHelper.drawLifeline ctx, x + objectWidth / 2, y + objectHeight,
-		# 	canvasElement.height / 2 - Margin * 2 - objectHeight, '#fff', COLOR_LIFELINE
-
 		CanvasHelper.drawLifeline ctx, x + objectWidth / 2, y + objectHeight,
-			RowHeight * sequenceData.maxRow, '#fff', COLOR_LIFELINE
+			ROW_HEIGHT * sequenceData.maxRow, '#fff', COLOR_LIFELINE
 
 		# Draw activations.
 		drawActivations(x, y, object)
@@ -137,25 +140,25 @@ class Sequenced
 
 	drawActivations = (x, y, object) ->
 		for activation in object.activations
-			activationY = if activation is 1 then Margin + objectHeight else Margin + objectHeight + RowHeight * (activation - 5 / 6)
-			activationHeight = if activation is 1 then RowHeight * (1 + 1 / 6) else RowHeight
+			activationY = if activation is 1 then MARGIN + objectHeight else MARGIN + objectHeight + ROW_HEIGHT * (activation - 5 / 6)
+			activationHeight = if activation is 1 then ROW_HEIGHT * (1 + 1 / 6) else ROW_HEIGHT
 			CanvasHelper.drawActivation ctx, x + objectWidth / 2, activationY,
-				activationHeight, RowHeight * sequenceData.maxRow, '#fff', COLOR_LIFELINE
+				activationHeight, ROW_HEIGHT * sequenceData.maxRow, '#fff', COLOR_LIFELINE
 
 	drawMessages = ->
 		drawMessage message for message in sequenceData.messages
 
 	drawMessage = (message) ->
 		getColumnPositionX = (objectIndex) ->
-			Margin + objectWidth / 2 + (DefaultCanvasWidth - objectWidth - Margin * 2) / (sequenceData.objectCount - 1) * objectIndex
+			MARGIN + objectWidth / 2 + (DEFAULT_CANVAS_WIDTH - objectWidth - MARGIN * 2) / (sequenceData.objectCount - 1) * objectIndex
 
-		y = RowHeight * (message.row + 2 / 3)
+		y = ROW_HEIGHT * (message.row + 2 / 3)
 
 		switch message.direction
 			when 'self'
 				x = getColumnPositionX(message.fromObjectIndex)
 
-				CanvasHelper.drawSelfArrow ctx, x, y - RowHeight * 3 / 8, y  + RowHeight * 3 / 8, COLOR_MESSAGE,
+				CanvasHelper.drawSelfArrow ctx, x, y - ROW_HEIGHT * 3 / 8, y  + ROW_HEIGHT * 3 / 8, COLOR_MESSAGE,
 					fontSize, fontColor, fontFamily, message.text, message.isDashed
 			when 'right'
 				x1 = getColumnPositionX(message.fromObjectIndex)
