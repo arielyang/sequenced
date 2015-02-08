@@ -159,7 +159,8 @@ class CanvasHelper
 		ctx.fillStyle = fontColor
 
 		x += fontSize * 1 / 3
-		words = text.split '\t'
+		splitter = if /\\n/.test(text) then '\\n' else ' '
+		words = text.split splitter
 		line = ''
 		yd = 0
 		if isDoubleLine
@@ -168,7 +169,7 @@ class CanvasHelper
 			lineHeight = fontSize * 1.2
 
 		for i in [0...words.length]
-			testLine = line + words[i]
+			testLine = line + words[i] + ' '
 			testWidth = ctx.measureText(testLine).width
 
 			if (testWidth > maxWidth and i > 0)
@@ -177,7 +178,7 @@ class CanvasHelper
 					ctx.fillText line, x, y
 				else
 					ctx.fillText line, x, y - yd
-				line = words[i]
+				line = words[i] + ' '
 				y += lineHeight
 			else
 				line = testLine;

@@ -360,12 +360,13 @@ CanvasHelper = (function() {
   };
 
   CanvasHelper.drawWrapText = function(ctx, text, x, y, maxWidth, fontWeight, fontSize, fontColor, fontFamily, textAlign, isDoubleLine) {
-    var i, line, lineHeight, testLine, testWidth, words, yd, _i, _ref;
+    var i, line, lineHeight, splitter, testLine, testWidth, words, yd, _i, _ref;
     ctx.font = "" + fontWeight + " " + fontSize + "px " + fontFamily;
     ctx.textAlign = textAlign ? textAlign : 'center';
     ctx.fillStyle = fontColor;
     x += fontSize * 1 / 3;
-    words = text.split('\t');
+    splitter = /\\n/.test(text) ? '\\n' : ' ';
+    words = text.split(splitter);
     line = '';
     yd = 0;
     if (isDoubleLine) {
@@ -374,7 +375,7 @@ CanvasHelper = (function() {
       lineHeight = fontSize * 1.2;
     }
     for (i = _i = 0, _ref = words.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
-      testLine = line + words[i];
+      testLine = line + words[i] + ' ';
       testWidth = ctx.measureText(testLine).width;
       if (testWidth > maxWidth && i > 0) {
         yd = fontSize / 2;
@@ -383,7 +384,7 @@ CanvasHelper = (function() {
         } else {
           ctx.fillText(line, x, y - yd);
         }
-        line = words[i];
+        line = words[i] + ' ';
         y += lineHeight;
       } else {
         line = testLine;
